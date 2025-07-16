@@ -13,6 +13,7 @@ export default function Dashboard() {
   const [isEditing, setIsEditing] = useState(false)
   const [editEmail, setEditEmail] = useState('')
   const [editDisplayName, setEditDisplayName] = useState('')
+  const [editPassword, setEditPassword] = useState('')
   const [updateLoading, setUpdateLoading] = useState(false)
   const [updateError, setUpdateError] = useState<string | null>(null)
   const [updateSuccess, setUpdateSuccess] = useState(false)
@@ -74,6 +75,7 @@ export default function Dashboard() {
       setEditEmail(session.user.email || '')
       setEditDisplayName(session.user.user_metadata?.display_name || '')
     }
+    setEditPassword('') // Reset password field
     setUpdateError(null)
     setUpdateSuccess(false)
     setEmailChangeRequested(false)
@@ -123,14 +125,27 @@ export default function Dashboard() {
         throw metadataError
       }
 
+      // Update password if provided
+      if (editPassword.trim()) {
+        const { error: passwordError } = await supabase.auth.updateUser({
+          password: editPassword
+        })
+
+        if (passwordError) {
+          throw passwordError
+        }
+      }
+
       if (emailChanged) {
         // Don't set updateSuccess immediately for email changes
         setIsEditing(false)
         // Reset email field to current email since change is pending
         setEditEmail(session.user.email || '')
+        setEditPassword('') // Clear password field
       } else {
         setUpdateSuccess(true)
         setIsEditing(false)
+        setEditPassword('') // Clear password field
       }
       
       // Refresh session to get updated data
@@ -327,6 +342,22 @@ export default function Dashboard() {
                   />
                   <Text size="1" color="gray">
                     ⚠️ Changing your email requires verification. You'll need to click the confirmation link sent to both your old and new email addresses.
+                  </Text>
+                </Flex>
+
+                <Flex direction="column" gap="1">
+                  <Text size="2" weight="medium">
+                    Password 
+                    <Text as="span" color="gray" size="1"> (Optional)</Text>
+                  </Text>
+                  <TextField.Root
+                    type="password"
+                    placeholder="Enter new password (leave empty to keep current)"
+                    value={editPassword}
+                    onChange={(e) => setEditPassword(e.target.value)}
+                  />
+                  <Text size="1" color="gray">
+                    💡 Only enter a password if you want to change it. Leave empty to keep your current password.
                   </Text>
                 </Flex>
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { Button, TextField, Flex, Text, Heading, Container } from '@radix-ui/themes'
+import { Button, TextField, Flex, Text, Heading, Container, Tooltip } from '@radix-ui/themes'
 import { Session } from '@supabase/supabase-js'
 import Link from 'next/link'
 
@@ -12,8 +12,8 @@ export default function Home() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [displayName, setDisplayName] = useState('')
-  const [updatingName, setUpdatingName] = useState(false)
+  const [isSignUpMode, setIsSignUpMode] = useState(false)
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -29,42 +29,39 @@ export default function Home() {
     return () => subscription.unsubscribe()
   }, [])
 
-  const handleSmartAuth = async () => {
+  const handleAuth = async () => {
     setLoading(true)
     setError(null)
 
-    // First, try to log in
-    const { error: loginError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (!loginError) {
-      // Login successful
-      setLoading(false)
-      return
-    }
-
-    // If login failed, check if it's because user doesn't exist
-    if (loginError.message.includes('Invalid login credentials') || 
-        loginError.message.includes('Email not confirmed') ||
-        loginError.message.includes('User not found')) {
-      
-      // Try to sign up the user
-      const { error: signUpError } = await supabase.auth.signUp({
+    if (isSignUpMode) {
+      // Sign up mode
+      const { error } = await supabase.auth.signUp({
         email,
         password,
       })
 
-      if (signUpError) {
-        setError(signUpError.message)
+      if (error) {
+        setError(error.message)
       } else {
         setError(null)
         alert('Account created! Check your email for confirmation link.')
       }
     } else {
-      // Some other login error (wrong password, etc.)
-      setError(loginError.message)
+      // Login mode
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          setError('Invalid email or password. Please check your credentials and try again.')
+        } else if (error.message.includes('Email not confirmed')) {
+          setError('Please check your email and confirm your account before signing in.')
+        } else {
+          setError(error.message)
+        }
+      }
     }
 
     setLoading(false)
@@ -74,33 +71,38 @@ export default function Home() {
     await supabase.auth.signOut()
   }
 
-  const handleUpdateDisplayName = async () => {
-    if (!displayName.trim()) return
-    
-    setUpdatingName(true)
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setError('Please enter your email address first')
+      return
+    }
+
+    setResetPasswordLoading(true)
     setError(null)
 
-    const { error } = await supabase.auth.updateUser({
-      data: { display_name: displayName.trim() }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
     })
 
     if (error) {
       setError(error.message)
     } else {
-      setDisplayName('')
-      // The auth state change will automatically update the session
+      alert('Password reset email sent! Check your inbox for instructions.')
     }
 
-    setUpdatingName(false)
+    setResetPasswordLoading(false)
   }
 
   if (!session) {
     return (
       <Container size="1" style={{ paddingTop: '100px' }}>
         <Flex direction="column" gap="3">
-          <Heading>Welcome</Heading>
+          <Heading>{isSignUpMode ? 'Create Account' : 'Welcome Back'}</Heading>
           <Text size="2" color="gray">
-            Enter your credentials to sign in or create a new account
+            {isSignUpMode 
+              ? 'Enter your details to create a new account' 
+              : 'Enter your credentials to sign in'
+            }
           </Text>
           <TextField.Root
             placeholder="Email"
@@ -113,11 +115,56 @@ export default function Home() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <Button 
-            onClick={handleSmartAuth} 
-            disabled={loading || !email || !password}
+          <Tooltip 
+            content={
+              !email.trim() && !password.trim() 
+                ? "Please enter both email and password" 
+                : !email.trim() 
+                ? "Please enter your email address" 
+                : !password.trim() 
+                ? "Please enter a password" 
+                : isSignUpMode 
+                ? "Create your new account" 
+                : "Sign in to your account"
+            }
           >
-            {loading ? 'Processing...' : 'Continue'}
+            <Button 
+              onClick={handleAuth} 
+              disabled={loading || !email || !password}
+            >
+              {loading ? 'Processing...' : (isSignUpMode ? 'Create Account' : 'Sign In')}
+            </Button>
+          </Tooltip>
+          {!isSignUpMode && (
+            <Tooltip 
+              content={!email.trim() ? "Please enter your email address first" : "Send password reset email"}
+            >
+              <Button 
+                variant="ghost" 
+                onClick={handleForgotPassword}
+                disabled={resetPasswordLoading || !email.trim()}
+                style={{ 
+                  color: 'var(--gray-11)',
+                  width: '100%',
+                  justifyContent: 'center'
+                }}
+              >
+                {resetPasswordLoading ? 'Sending...' : 'Forgot password?'}
+              </Button>
+            </Tooltip>
+          )}
+          <Button 
+            variant="ghost" 
+            onClick={() => setIsSignUpMode(!isSignUpMode)}
+            style={{ 
+              width: '100%',
+              justifyContent: 'center'
+            }}
+          >
+            {isSignUpMode 
+              ? 'Already have an account? Sign In' 
+              : 'Need an account? Create Account'
+            }
           </Button>
           {error && <Text color="red">{error}</Text>}
         </Flex>
@@ -134,26 +181,9 @@ export default function Home() {
           This is your first Next.js app.
         </Text>
         {!session.user.user_metadata?.display_name && (
-          <Flex direction="column" gap="2">
-            <Text size="2" color="orange">
-              Set up your display name for a more personalized experience:
-            </Text>
-            <Flex gap="2">
-              <TextField.Root
-                placeholder="Enter your display name"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                style={{ flex: 1 }}
-              />
-              <Button 
-                onClick={handleUpdateDisplayName}
-                disabled={updatingName || !displayName.trim()}
-                variant="outline"
-              >
-                {updatingName ? 'Saving...' : 'Save'}
-              </Button>
-            </Flex>
-          </Flex>
+          <Text color="orange" size="2">
+            💡 Tip: Set up your display name in the dashboard for a more personalized experience!
+          </Text>
         )}
         <Flex gap="2">
           <Link href="/dashboard">
