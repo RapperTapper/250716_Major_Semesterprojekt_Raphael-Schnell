@@ -11,7 +11,9 @@ export default function Home() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [isSignUp, setIsSignUp] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [displayName, setDisplayName] = useState('')
+  const [updatingName, setUpdatingName] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -27,40 +29,79 @@ export default function Home() {
     return () => subscription.unsubscribe()
   }, [])
 
-  const handleAuth = async () => {
-    if (isSignUp) {
-      const { error } = await supabase.auth.signUp({
+  const handleSmartAuth = async () => {
+    setLoading(true)
+    setError(null)
+
+    // First, try to log in
+    const { error: loginError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (!loginError) {
+      // Login successful
+      setLoading(false)
+      return
+    }
+
+    // If login failed, check if it's because user doesn't exist
+    if (loginError.message.includes('Invalid login credentials') || 
+        loginError.message.includes('Email not confirmed') ||
+        loginError.message.includes('User not found')) {
+      
+      // Try to sign up the user
+      const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
       })
-      if (error) {
-        setError(error.message)
+
+      if (signUpError) {
+        setError(signUpError.message)
       } else {
         setError(null)
-        alert('Check your email for confirmation link!')
+        alert('Account created! Check your email for confirmation link.')
       }
     } else {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      if (error) {
-        setError(error.message)
-      } else {
-        setError(null)
-      }
+      // Some other login error (wrong password, etc.)
+      setError(loginError.message)
     }
+
+    setLoading(false)
   }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
   }
 
+  const handleUpdateDisplayName = async () => {
+    if (!displayName.trim()) return
+    
+    setUpdatingName(true)
+    setError(null)
+
+    const { error } = await supabase.auth.updateUser({
+      data: { display_name: displayName.trim() }
+    })
+
+    if (error) {
+      setError(error.message)
+    } else {
+      setDisplayName('')
+      // The auth state change will automatically update the session
+    }
+
+    setUpdatingName(false)
+  }
+
   if (!session) {
     return (
       <Container size="1" style={{ paddingTop: '100px' }}>
         <Flex direction="column" gap="3">
-          <Heading>{isSignUp ? 'Sign Up' : 'Login'}</Heading>
+          <Heading>Welcome</Heading>
+          <Text size="2" color="gray">
+            Enter your credentials to sign in or create a new account
+          </Text>
           <TextField.Root
             placeholder="Email"
             value={email}
@@ -72,14 +113,11 @@ export default function Home() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <Button onClick={handleAuth}>
-            {isSignUp ? 'Sign Up' : 'Log In'}
-          </Button>
           <Button 
-            variant="ghost" 
-            onClick={() => setIsSignUp(!isSignUp)}
+            onClick={handleSmartAuth} 
+            disabled={loading || !email || !password}
           >
-            {isSignUp ? 'Already have an account? Log In' : 'Need an account? Sign Up'}
+            {loading ? 'Processing...' : 'Continue'}
           </Button>
           {error && <Text color="red">{error}</Text>}
         </Flex>
@@ -96,15 +134,40 @@ export default function Home() {
           This is your first Next.js app.
         </Text>
         {!session.user.user_metadata?.display_name && (
-          <Text color="orange" size="2">
-            💡 Tip: Set up your display name in the dashboard for a more personalized experience!
-          </Text>
+          <Flex direction="column" gap="2">
+            <Text size="2" color="orange">
+              Set up your display name for a more personalized experience:
+            </Text>
+            <Flex gap="2">
+              <TextField.Root
+                placeholder="Enter your display name"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                style={{ flex: 1 }}
+              />
+              <Button 
+                onClick={handleUpdateDisplayName}
+                disabled={updatingName || !displayName.trim()}
+                variant="outline"
+              >
+                {updatingName ? 'Saving...' : 'Save'}
+              </Button>
+            </Flex>
+          </Flex>
         )}
         <Flex gap="2">
           <Link href="/dashboard">
-            <Button>Go to Dashboard</Button>
+            <Button disabled={!session.user.user_metadata?.display_name}>
+              Go to Dashboard
+            </Button>
           </Link>
-          <Button onClick={handleLogout} variant="outline">Log Out</Button>
+          <Button 
+            onClick={handleLogout} 
+            variant="outline"
+            disabled={!session.user.user_metadata?.display_name}
+          >
+            Log Out
+          </Button>
         </Flex>
       </Flex>
     </Container>

@@ -83,6 +83,12 @@ export default function Dashboard() {
   const handleSaveProfile = async () => {
     if (!session) return
 
+    // Prevent saving if display name is empty
+    if (!editDisplayName.trim()) {
+      setUpdateError('Display name cannot be empty')
+      return
+    }
+
     setUpdateLoading(true)
     setUpdateError(null)
     setUpdateSuccess(false)
@@ -299,7 +305,12 @@ export default function Dashboard() {
                         : {}
                     }
                   />
-                  {!session.user.user_metadata?.display_name && (
+                  {!editDisplayName.trim() && (
+                    <Text size="1" color="red">
+                      ⚠️ Display name is required and cannot be empty
+                    </Text>
+                  )}
+                  {!session.user.user_metadata?.display_name && editDisplayName.trim() && (
                     <Text size="1" color="blue">
                       💡 This will be shown instead of your email address
                     </Text>
@@ -355,7 +366,7 @@ export default function Dashboard() {
                   <Button 
                     onClick={handleSaveProfile}
                     loading={updateLoading}
-                    disabled={updateLoading}
+                    disabled={updateLoading || !editDisplayName.trim()}
                   >
                     {!session.user.user_metadata?.display_name && editDisplayName.trim() 
                       ? 'Complete Profile Setup' 
