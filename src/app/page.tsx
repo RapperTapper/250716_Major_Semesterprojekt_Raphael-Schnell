@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { Button, TextField, Flex, Text, Heading, Container, Tooltip } from '@radix-ui/themes'
 import { Session } from '@supabase/supabase-js'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export default function Home() {
   const [session, setSession] = useState<Session | null>(null)
@@ -14,6 +15,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [isSignUpMode, setIsSignUpMode] = useState(false)
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -35,14 +37,76 @@ export default function Home() {
 
     if (isSignUpMode) {
       // Sign up mode
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       })
 
+      // Log everything to understand what Supabase returns
+      console.log('=== SUPABASE SIGNUP RESPONSE ===')
+      console.log('Full response data:', data)
+      console.log('Full response error:', error)
+      console.log('User object:', data?.user)
+      console.log('Session object:', data?.session)
+      console.log('User email_confirmed_at:', data?.user?.email_confirmed_at)
+      console.log('Error message:', error?.message)
+      console.log('Error code:', error?.code)
+      console.log('================================')
+
       if (error) {
-        setError(error.message)
+        // Log the actual error to understand what Supabase returns
+        console.log('Supabase signup error:', error)
+        
+        // Check if the error is due to existing account
+        if (error.message.includes('already registered') || 
+            error.message.includes('already been registered') ||
+            error.message.includes('already exists') ||
+            error.message.includes('User already registered') ||
+            error.message.includes('already in use') ||
+            error.message.includes('duplicate')) {
+          setError('An account with this email already exists. Please sign in instead or use a different email address.')
+        } else {
+          setError(error.message)
+        }
+      } else if (data.user && data.user.email_confirmed_at === undefined && !data.session) {
+        // Check if this might be a duplicate signup attempt
+        // Try to sign in with the same credentials to see if user already exists
+        console.log('Checking if user already exists by attempting login...')
+        
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+        
+        if (loginData.session) {
+          // User successfully logged in, meaning they already existed
+          console.log('User already exists - login successful')
+          alert('An account with this email already exists and you have been signed in.')
+          // Clear the form fields after successful login
+          setEmail('')
+          setPassword('')
+          // The session will be automatically set by the auth state change
+        } else if (loginError && loginError.message.includes('Email not confirmed')) {
+          // User exists but email not confirmed
+          console.log('User exists but email not confirmed')
+          setError('An account with this email already exists but is not confirmed. Please check your email for the confirmation link.')
+        } else if (loginError && loginError.message.includes('Invalid login credentials')) {
+          // User exists but wrong password was provided
+          console.log('User exists but wrong password provided')
+          setError('An account with this email already exists. Please use the correct password to sign in, or use "Forgot password?" if needed.')
+        } else {
+          // Genuinely new user
+          console.log('New user created, needs email confirmation')
+          setError(null)
+          alert('Account created! Check your email for confirmation link.')
+        }
+      } else if (data.user && data.user.email_confirmed_at) {
+        // User already exists and is confirmed - this shouldn't happen in signup
+        console.log('User already exists and is confirmed')
+        setError('An account with this email already exists. Please sign in instead.')
       } else {
+        // Successful signup
+        console.log('Successful signup - default case')
         setError(null)
         alert('Account created! Check your email for confirmation link.')
       }
@@ -61,6 +125,10 @@ export default function Home() {
         } else {
           setError(error.message)
         }
+      } else {
+        // Successful login - clear form fields
+        setEmail('')
+        setPassword('')
       }
     }
 
@@ -68,7 +136,13 @@ export default function Home() {
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    try {
+      await supabase.auth.signOut()
+      // Explicitly redirect to home page (login page)
+      router.push('/')
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
   }
 
   const handleForgotPassword = async () => {
@@ -135,24 +209,22 @@ export default function Home() {
               {loading ? 'Processing...' : (isSignUpMode ? 'Create Account' : 'Sign In')}
             </Button>
           </Tooltip>
-          {!isSignUpMode && (
-            <Tooltip 
-              content={!email.trim() ? "Please enter your email address first" : "Send password reset email"}
+          <Tooltip 
+            content={!email.trim() ? "Please enter your email address first" : "Send password reset email"}
+          >
+            <Button 
+              variant="ghost" 
+              onClick={handleForgotPassword}
+              disabled={resetPasswordLoading || !email.trim()}
+              style={{ 
+                color: 'var(--gray-11)',
+                width: '100%',
+                justifyContent: 'center'
+              }}
             >
-              <Button 
-                variant="ghost" 
-                onClick={handleForgotPassword}
-                disabled={resetPasswordLoading || !email.trim()}
-                style={{ 
-                  color: 'var(--gray-11)',
-                  width: '100%',
-                  justifyContent: 'center'
-                }}
-              >
-                {resetPasswordLoading ? 'Sending...' : 'Forgot password?'}
-              </Button>
-            </Tooltip>
-          )}
+              {resetPasswordLoading ? 'Sending...' : 'Forgot password?'}
+            </Button>
+          </Tooltip>
           <Button 
             variant="ghost" 
             onClick={() => setIsSignUpMode(!isSignUpMode)}
