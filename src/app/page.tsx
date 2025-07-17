@@ -56,34 +56,42 @@ export default function Home() {
 
       if (error) {
         console.log('Supabase signUp error:', error)
+        console.log('Error message:', error.message)
+        console.log('Error status:', error.status)
+        console.log('Error name:', error.name)
         
-        // Check if the error indicates user already exists
-        if (error.message.includes('already registered') || 
-            error.message.includes('already been registered') ||
-            error.message.includes('already exists') ||
-            error.message.includes('User already registered') ||
-            error.message.includes('already in use') ||
-            error.message.includes('duplicate') ||
-            error.message.includes('signup is disabled') ||
-            error.message.toLowerCase().includes('email') && error.message.toLowerCase().includes('taken')) {
-          setError('An account with this email already exists. Please sign in instead or use a different email address.')
-        } else {
-          setError(error.message)
-        }
+        setError(error.message)
       } else if (data.user) {
-        // Success - user created
-        if (data.session) {
-          // User is immediately signed in
-          setError(null)
-          setEmail('')
-          setPassword('')
-          alert('Account created and signed in successfully!')
+        console.log('Supabase signUp data:', data)
+        console.log('User object:', data.user)
+        console.log('Session object:', data.session)
+        console.log('User created_at:', data.user.created_at)
+        
+        // Check if this is actually a new user or an existing one
+        const now = new Date()
+        const userCreatedAt = new Date(data.user.created_at)
+        const timeDiffInSeconds = (now.getTime() - userCreatedAt.getTime()) / 1000
+        
+        console.log('Time difference in seconds:', timeDiffInSeconds)
+        
+        // If user was created more than 5 seconds ago, it's an existing user
+        if (timeDiffInSeconds > 5) {
+          setError('This email is already in use. Please sign in instead or use a different email address.')
         } else {
-          // User created but needs email confirmation
-          setError(null)
-          alert('Account created! Please check your email for the confirmation link before signing in.')
-          setEmail('')
-          setPassword('')
+          // This is a genuinely new user
+          if (data.session) {
+            // User is immediately signed in
+            setError(null)
+            setEmail('')
+            setPassword('')
+            alert('Account created and signed in successfully!')
+          } else {
+            // User created but needs email confirmation
+            setError(null)
+            alert('Account created! Please check your email for the confirmation link before signing in.')
+            setEmail('')
+            setPassword('')
+          }
         }
       } else {
         setError('Something went wrong during account creation. Please try again.')
