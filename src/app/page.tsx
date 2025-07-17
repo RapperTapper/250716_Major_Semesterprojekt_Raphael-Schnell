@@ -62,23 +62,40 @@ export default function Home() {
         
         setError(error.message)
       } else if (data.user) {
-        console.log('Supabase signUp data:', data)
-        console.log('User object:', data.user)
+        console.log('=== DETAILED SUPABASE RESPONSE ANALYSIS ===')
+        console.log('Full data object:', JSON.stringify(data, null, 2))
+        console.log('User object:', JSON.stringify(data.user, null, 2))
         console.log('Session object:', data.session)
+        console.log('User ID:', data.user.id)
+        console.log('User email:', data.user.email)
         console.log('User created_at:', data.user.created_at)
+        console.log('User email_confirmed_at:', data.user.email_confirmed_at)
+        console.log('User last_sign_in_at:', data.user.last_sign_in_at)
+        console.log('User metadata:', data.user.user_metadata)
+        console.log('User app_metadata:', data.user.app_metadata)
+        console.log('User role:', data.user.role)
+        console.log('User aud:', data.user.aud)
+        console.log('=== END ANALYSIS ===')
         
-        // Check if this is actually a new user or an existing one
-        const now = new Date()
-        const userCreatedAt = new Date(data.user.created_at)
-        const timeDiffInSeconds = (now.getTime() - userCreatedAt.getTime()) / 1000
+        // Better logic to detect existing users
+        // Check if recovery_sent_at exists and is different from created_at
+        // This indicates the user already existed and had password recovery before
+        const hasRecoveryHistory = data.user.recovery_sent_at && 
+          data.user.recovery_sent_at !== data.user.created_at
         
-        console.log('Time difference in seconds:', timeDiffInSeconds)
+        // Check if confirmation was just sent (indicates existing user trying to sign up again)
+        const confirmationJustSent = data.user.confirmation_sent_at === data.user.created_at
         
-        // If user was created more than 5 seconds ago, it's an existing user
-        if (timeDiffInSeconds > 5) {
+        console.log('Has recovery history:', hasRecoveryHistory)
+        console.log('Confirmation just sent:', confirmationJustSent)
+        console.log('Recovery sent at:', data.user.recovery_sent_at)
+        console.log('Created at:', data.user.created_at)
+        
+        if (hasRecoveryHistory) {
+          // User definitely existed before - they had password recovery
           setError('This email is already in use. Please sign in instead or use a different email address.')
         } else {
-          // This is a genuinely new user
+          // This appears to be a genuinely new user
           if (data.session) {
             // User is immediately signed in
             setError(null)
