@@ -227,7 +227,7 @@ export default function Home() {
         setError(error.message)
       }
     } else {
-      alert('Password reset email sent! Check your inbox for instructions.')
+      alert('If an account with that email exists, a password reset link has been sent. Please check your inbox for further instructions.')
     }
 
     setResetPasswordLoading(false)
@@ -251,7 +251,7 @@ export default function Home() {
     } else {
       // Clear the input field after successful save
       setDisplayName('')
-      alert('Display name saved successfully!')
+      // alert('Display name saved successfully!')
     }
 
     setSaveDisplayNameLoading(false)
