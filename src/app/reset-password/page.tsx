@@ -16,19 +16,16 @@ function ResetPasswordForm() {
 
   useEffect(() => {
     // Check if we have the necessary URL parameters from the email link
-    const access_token = searchParams.get('access_token')
-    const refresh_token = searchParams.get('refresh_token')
+    const token_hash = searchParams.get('token_hash')
+    const type = searchParams.get('type')
     
-    if (!access_token || !refresh_token) {
+    if (!token_hash || type !== 'recovery') {
       setError('Invalid or expired reset link. Please request a new password reset.')
       return
     }
 
-    // Set the session with the tokens from the URL
-    supabase.auth.setSession({
-      access_token,
-      refresh_token
-    })
+    // The token will be automatically handled by Supabase when updateUser is called
+    // No need to manually set session here
   }, [searchParams])
 
   const handleResetPassword = async () => {
