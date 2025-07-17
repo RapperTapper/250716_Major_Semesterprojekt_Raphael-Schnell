@@ -300,11 +300,6 @@ export default function Home() {
             </Flex>
           </Flex>
         )}
-        {!session.user.user_metadata?.display_name && (
-          <Text color="orange" size="2">
-            💡 Tip: Set up your display name in the dashboard for a more personalized experience!
-          </Text>
-        )}
         <Flex gap="2">
           <Link href="/dashboard">
             <Button 
