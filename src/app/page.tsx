@@ -244,11 +244,13 @@ export default function Home() {
   return (
     <Container size="1" style={{ paddingTop: '100px' }}>
       <Flex direction="column" gap="3">
-        <Heading>🎉 Hello World!</Heading>
+        <Heading>🎉 You are in!</Heading>
         <Text>
-          Welcome {session.user.user_metadata?.display_name || session.user.email}! 
+          Welcome <strong>{session.user.user_metadata?.display_name || session.user.email}</strong>
           <br />
-          What an empty page here... right?
+          What an empty page... right?
+          <br />
+          Let's change that!
         </Text>
         {!session.user.user_metadata?.display_name && (
           <Text color="orange" size="2">

@@ -36,6 +36,20 @@ a {
   text-decoration: none;
 }
 
+/* Global button cursor styling */
+button, 
+[role="button"],
+.rt-Button {
+  cursor: pointer !important;
+}
+
+/* Ensure disabled buttons show not-allowed cursor */
+button:disabled,
+[role="button"]:disabled,
+.rt-Button:disabled {
+  cursor: not-allowed !important;
+}
+
 @media (prefers-color-scheme: dark) {
   html {
     color-scheme: dark;
