@@ -94,7 +94,16 @@ export default function Home() {
         console.log('Error status:', error.status)
         console.log('Error name:', error.name)
         
-        setError(error.message)
+        // Check for specific error messages that indicate user already exists
+        if (error.message.includes('User already registered') || 
+            error.message.includes('already registered') ||
+            error.message.includes('already exists') ||
+            error.message.includes('duplicate') ||
+            error.status === 422) {
+          setError('This email is already registered. Please sign in instead, or use "Forgot password?" if needed.')
+        } else {
+          setError(error.message)
+        }
       } else if (data.user) {
         console.log('=== ANALYZING SIGNUP RESPONSE ===')
         console.log('User ID:', data.user.id)
@@ -105,56 +114,23 @@ export default function Home() {
         console.log('Confirmation sent at:', data.user.confirmation_sent_at)
         console.log('Session:', data.session ? 'Present' : 'Null')
         
-        // Determine if this is a genuine new user or existing user
-        const now = new Date()
-        const createdAt = new Date(data.user.created_at)
-        const timeDiffMs = now.getTime() - createdAt.getTime()
+        // Simpler, more reliable detection:
+        // 1. If there's a session, user was created and signed in immediately
+        // 2. If no session but confirmation_sent_at exists, it's a genuine new user needing confirmation
+        // 3. The key insight: Supabase will NOT send a confirmation email for existing users
+        //    during signup attempts, even if it returns user data
+        // 4. HOWEVER: When existing user + wrong password, Supabase returns fake data with 
+        //    identical created_at and confirmation_sent_at timestamps
         
-        console.log('Time since creation:', timeDiffMs, 'ms')
-        console.log('Has session:', !!data.session)
-        console.log('Has email confirmed before:', !!data.user.email_confirmed_at)
-        console.log('Has last sign in before:', !!data.user.last_sign_in_at)
-        console.log('Confirmation sent at:', data.user.confirmation_sent_at)
+        const createdAt = data.user.created_at
+        const confirmationSentAt = data.user.confirmation_sent_at
         
-        // Check if this is a genuine new signup
-        // A genuine new signup will have:
-        // - Recent creation time (very recent, not just recent)
-        // - No previous email confirmations
-        // - No previous sign-ins
-        // - A confirmation_sent_at timestamp (indicating email was sent)
-        // 
-        // However, we need to be careful because Supabase sometimes returns
-        // what looks like a "new user" even for existing users when signup is called
-        // with wrong credentials. We can detect this by checking if the creation
-        // and confirmation timestamps are identical (suspicious) and very recent.
+        // Check if timestamps are identical (indicates fake Supabase response for existing user)
+        const areTimestampsIdentical = createdAt === confirmationSentAt
         
-        const createdAtMs = new Date(data.user.created_at).getTime()
-        const confirmationSentAtMs = data.user.confirmation_sent_at ? 
-          new Date(data.user.confirmation_sent_at).getTime() : null
-        
-        // Check if creation and confirmation timestamps are suspiciously close
-        // (less than 100ms apart) which often indicates a fake Supabase response
-        const timestampDiff = confirmationSentAtMs ? 
-          Math.abs(confirmationSentAtMs - createdAtMs) : Infinity
-        
-        console.log('Creation timestamp:', createdAtMs)
-        console.log('Confirmation timestamp:', confirmationSentAtMs)
-        console.log('Timestamp difference:', timestampDiff, 'ms')
-        
-        const isSuspiciouslyQuick = timestampDiff < 100 // Less than 100ms between creation and confirmation
-        const isVeryRecent = timeDiffMs < 2000 // Created less than 2 seconds ago
-        
-        const isGenuineNewUser = (
-          !data.user.email_confirmed_at && // No previous confirmations
-          !data.user.last_sign_in_at && // No previous sign-ins
-          data.user.confirmation_sent_at && // Confirmation was sent
-          isVeryRecent && // Created very recently
-          !isSuspiciouslyQuick // But not suspiciously quick (fake response indicator)
-        )
-        
-        console.log('Is genuine new user:', isGenuineNewUser)
-        console.log('Is suspiciously quick:', isSuspiciouslyQuick)
-        console.log('Is very recent:', isVeryRecent)
+        console.log('Created at:', createdAt)
+        console.log('Confirmation sent at:', confirmationSentAt)
+        console.log('Timestamps identical:', areTimestampsIdentical)
         
         if (data.session) {
           // User is immediately signed in - genuinely new with instant confirmation
@@ -163,16 +139,22 @@ export default function Home() {
           setPassword('')
           console.log('🎉 New user created and signed in immediately')
           alert('Account created and signed in successfully!')
-        } else if (isGenuineNewUser) {
-          // User created but needs email confirmation - genuinely new
+        } else if (areTimestampsIdentical) {
+          // Identical timestamps = existing user, Supabase fake response
+          console.log('🚨 EXISTING USER: Identical timestamps detected - fake Supabase response')
+          setError('This email is already registered. Please sign in instead, or use "Forgot password?" if needed.')
+        } else if (data.user.confirmation_sent_at && 
+                   !data.user.email_confirmed_at && 
+                   !data.user.last_sign_in_at) {
+          // User created and confirmation email was sent - genuinely new
           setError(null)
           console.log('📧 New user created, confirmation email sent')
           alert('Account created! Please check your email for the confirmation link before signing in.')
           setEmail('')
           setPassword('')
         } else {
-          // Likely existing user - Supabase sometimes returns user data even for existing users
-          console.log('🚨 SUSPICIOUS: Likely existing user - Supabase response for existing user')
+          // Fallback: if we can't determine clearly, assume existing user
+          console.log('🚨 AMBIGUOUS: Treating as existing user for safety')
           setError('This email is already registered. Please sign in instead, or use "Forgot password?" if needed.')
         }
       } else {
