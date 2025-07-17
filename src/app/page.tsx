@@ -118,16 +118,43 @@ export default function Home() {
         
         // Check if this is a genuine new signup
         // A genuine new signup will have:
-        // - Recent creation time
+        // - Recent creation time (very recent, not just recent)
         // - No previous email confirmations
         // - No previous sign-ins
         // - A confirmation_sent_at timestamp (indicating email was sent)
+        // 
+        // However, we need to be careful because Supabase sometimes returns
+        // what looks like a "new user" even for existing users when signup is called
+        // with wrong credentials. We can detect this by checking if the creation
+        // and confirmation timestamps are identical (suspicious) and very recent.
+        
+        const createdAtMs = new Date(data.user.created_at).getTime()
+        const confirmationSentAtMs = data.user.confirmation_sent_at ? 
+          new Date(data.user.confirmation_sent_at).getTime() : null
+        
+        // Check if creation and confirmation timestamps are suspiciously close
+        // (less than 100ms apart) which often indicates a fake Supabase response
+        const timestampDiff = confirmationSentAtMs ? 
+          Math.abs(confirmationSentAtMs - createdAtMs) : Infinity
+        
+        console.log('Creation timestamp:', createdAtMs)
+        console.log('Confirmation timestamp:', confirmationSentAtMs)
+        console.log('Timestamp difference:', timestampDiff, 'ms')
+        
+        const isSuspiciouslyQuick = timestampDiff < 100 // Less than 100ms between creation and confirmation
+        const isVeryRecent = timeDiffMs < 2000 // Created less than 2 seconds ago
+        
         const isGenuineNewUser = (
-          timeDiffMs < 5000 && // Created very recently
           !data.user.email_confirmed_at && // No previous confirmations
           !data.user.last_sign_in_at && // No previous sign-ins
-          data.user.confirmation_sent_at // Confirmation email was sent
+          data.user.confirmation_sent_at && // Confirmation was sent
+          isVeryRecent && // Created very recently
+          !isSuspiciouslyQuick // But not suspiciously quick (fake response indicator)
         )
+        
+        console.log('Is genuine new user:', isGenuineNewUser)
+        console.log('Is suspiciously quick:', isSuspiciouslyQuick)
+        console.log('Is very recent:', isVeryRecent)
         
         if (data.session) {
           // User is immediately signed in - genuinely new with instant confirmation
