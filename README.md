@@ -115,7 +115,7 @@ The project uses:
 
 ## Personal Reflections
 
-This project represents a significant milestone in my web development journey. Building a complete application with Next.js from scratch provided invaluable hands-on experience with modern web development practices. I'm genuinely happy and proud to be able to create such a functional application using the knowledge and skills I gained during my time at FHGR.
+This project represents a larger milestone in my web development journey. Building a complete application with Next.js from scratch provided invaluable hands-on experience with modern web development practices. I'm genuinely happy and proud to be able to create such a functional application using the knowledge and skills I gained during my time at FHGR.
 
 ### Key Takeaways
 - **Framework Adoption**: Learning Next.js in a real project context was more effective than following tutorials alone
@@ -131,7 +131,7 @@ To run this project locally:
 
 1. Clone the repository
 ```bash
-git clone [repository-url]
+git clone [https://github.com/RapperTapper/250716_Major_Semesterprojekt_Raphael-Schnell?tab=readme-ov-file#personal-reflections]
 cd 250716_Major_Semesterprojekt_Raphael-Schnell
 ```
 
