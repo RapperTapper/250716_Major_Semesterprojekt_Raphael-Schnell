@@ -15,6 +15,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [isSignUpMode, setIsSignUpMode] = useState(false)
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false)
+  const [displayName, setDisplayName] = useState('')
+  const [saveDisplayNameLoading, setSaveDisplayNameLoading] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -148,6 +150,30 @@ export default function Home() {
     setResetPasswordLoading(false)
   }
 
+  const handleSaveDisplayName = async () => {
+    if (!displayName.trim()) {
+      setError('Please enter a display name')
+      return
+    }
+
+    setSaveDisplayNameLoading(true)
+    setError(null)
+
+    const { error } = await supabase.auth.updateUser({
+      data: { display_name: displayName.trim() }
+    })
+
+    if (error) {
+      setError(error.message)
+    } else {
+      // Clear the input field after successful save
+      setDisplayName('')
+      alert('Display name saved successfully!')
+    }
+
+    setSaveDisplayNameLoading(false)
+  }
+
   if (!session) {
     return (
       <Container size="1" style={{ paddingTop: '100px' }}>
@@ -246,6 +272,35 @@ export default function Home() {
           Let&apos;s change that!
         </Text>
         {!session.user.user_metadata?.display_name && (
+          <Flex direction="column" gap="2" style={{ marginBottom: '16px' }}>
+            <Text color="orange" size="2">
+              💡 Please set up your display name to access the dashboard:
+            </Text>
+            <Flex gap="2" align="end">
+              <TextField.Root
+                placeholder="Enter your display name"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && displayName.trim() && !saveDisplayNameLoading) {
+                    e.preventDefault()
+                    handleSaveDisplayName()
+                  }
+                }}
+                style={{ flex: 1 }}
+                tabIndex={1}
+              />
+              <Button 
+                onClick={handleSaveDisplayName}
+                disabled={saveDisplayNameLoading || !displayName.trim()}
+                tabIndex={2}
+              >
+                {saveDisplayNameLoading ? 'Saving...' : 'Save'}
+              </Button>
+            </Flex>
+          </Flex>
+        )}
+        {!session.user.user_metadata?.display_name && (
           <Text color="orange" size="2">
             💡 Tip: Set up your display name in the dashboard for a more personalized experience!
           </Text>
@@ -254,7 +309,7 @@ export default function Home() {
           <Link href="/dashboard">
             <Button 
               disabled={!session.user.user_metadata?.display_name}
-              tabIndex={1}
+              tabIndex={session.user.user_metadata?.display_name ? 1 : 3}
             >
               Go to Dashboard
             </Button>
@@ -263,11 +318,12 @@ export default function Home() {
             onClick={handleLogout} 
             variant="outline"
             disabled={!session.user.user_metadata?.display_name}
-            tabIndex={2}
+            tabIndex={session.user.user_metadata?.display_name ? 2 : 4}
           >
             Log Out
           </Button>
         </Flex>
+        {error && <Text color="red">{error}</Text>}
       </Flex>
     </Container>
   )
