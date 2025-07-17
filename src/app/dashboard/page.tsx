@@ -6,7 +6,6 @@ import { Button, Flex, Text, Heading, Container, Card, TextField } from '@radix-
 import { Session } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 import { Pencil1Icon } from '@radix-ui/react-icons'
-import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export default function Dashboard() {
   const [session, setSession] = useState<Session | null>(null)

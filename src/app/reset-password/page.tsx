@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { Button, TextField, Flex, Text, Heading, Container } from '@radix-ui/themes'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { SpeedInsights } from "@vercel/speed-insights/next"
 
 function ResetPasswordForm() {
   const [newPassword, setNewPassword] = useState('')

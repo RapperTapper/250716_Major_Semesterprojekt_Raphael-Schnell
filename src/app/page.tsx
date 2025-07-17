@@ -6,7 +6,6 @@ import { Button, TextField, Flex, Text, Heading, Container, Tooltip } from '@rad
 import { Session } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export default function Home() {
   const [session, setSession] = useState<Session | null>(null)
@@ -250,7 +249,7 @@ export default function Home() {
           <br />
           What an empty page... right?
           <br />
-          Let's change that!
+          Let&apos;s change that!
         </Text>
         {!session.user.user_metadata?.display_name && (
           <Text color="orange" size="2">
