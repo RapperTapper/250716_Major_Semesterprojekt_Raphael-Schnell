@@ -43,63 +43,37 @@ export default function Home() {
     return () => subscription.unsubscribe()
   }, [])
 
-  const checkUserExists = async (email: string): Promise<boolean> => {
-    try {
-      // Try to trigger a password reset - if user doesn't exist, it will return an error
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      })
-      
-      // If no error, user exists
-      // If error contains "not found" or similar, user doesn't exist
-      if (error && (error.message.includes('User not found') || 
-                   error.message.includes('No user found') ||
-                   error.message.includes('not found') ||
-                   error.message.includes('Invalid email') ||
-                   error.message.includes('does not exist'))) {
-        return false // User doesn't exist
-      }
-      
-      return true // User exists (no error or different error)
-    } catch (error) {
-      console.error('Error checking if user exists:', error)
-      return false // Assume user doesn't exist on unexpected error
-    }
-  }
-
   const handleAuth = async () => {
     setLoading(true)
     setError(null)
 
     if (isSignUpMode) {
-      // Check if user already exists before attempting signup
-      const userExists = await checkUserExists(email)
-      
-      if (userExists) {
-        setError('An account with this email already exists. Please sign in instead or use a different email address.')
-        setLoading(false)
-        return
-      }
-
-      // Sign up mode
+      // Sign up mode - simple and direct
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
       })
 
       if (error) {
-        // Log the full error to console for debugging
         console.log('Supabase signUp error:', error)
-        console.log('Error message:', error.message)
-        console.log('Error code:', error.status)
         
-        setError(error.message)
+        // Check if the error indicates user already exists
+        if (error.message.includes('already registered') || 
+            error.message.includes('already been registered') ||
+            error.message.includes('already exists') ||
+            error.message.includes('User already registered') ||
+            error.message.includes('already in use') ||
+            error.message.includes('duplicate') ||
+            error.message.includes('signup is disabled') ||
+            error.message.toLowerCase().includes('email') && error.message.toLowerCase().includes('taken')) {
+          setError('An account with this email already exists. Please sign in instead or use a different email address.')
+        } else {
+          setError(error.message)
+        }
       } else if (data.user) {
-        // User was successfully created
-        console.log('Supabase signUp data:', data)
-        
+        // Success - user created
         if (data.session) {
-          // User is immediately signed in (email confirmation disabled)
+          // User is immediately signed in
           setError(null)
           setEmail('')
           setPassword('')
@@ -112,7 +86,6 @@ export default function Home() {
           setPassword('')
         }
       } else {
-        // Unexpected case
         setError('Something went wrong during account creation. Please try again.')
       }
     } else {
