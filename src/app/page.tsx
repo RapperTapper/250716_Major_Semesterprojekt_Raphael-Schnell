@@ -42,20 +42,7 @@ export default function Home() {
         password,
       })
 
-      // Log everything to understand what Supabase returns
-      console.log('=== SUPABASE SIGNUP RESPONSE ===')
-      console.log('Full response data:', data)
-      console.log('Full response error:', error)
-      console.log('User object:', data?.user)
-      console.log('Session object:', data?.session)
-      console.log('User email_confirmed_at:', data?.user?.email_confirmed_at)
-      console.log('Error message:', error?.message)
-      console.log('Error code:', error?.code)
-      console.log('================================')
-
       if (error) {
-        // Log the actual error to understand what Supabase returns
-        console.log('Supabase signup error:', error)
         
         // Check if the error is due to existing account
         if (error.message.includes('already registered') || 
@@ -71,7 +58,6 @@ export default function Home() {
       } else if (data.user && data.user.email_confirmed_at === undefined && !data.session) {
         // Check if this might be a duplicate signup attempt
         // Try to sign in with the same credentials to see if user already exists
-        console.log('Checking if user already exists by attempting login...')
         
         const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
           email,
@@ -80,7 +66,6 @@ export default function Home() {
         
         if (loginData.session) {
           // User successfully logged in, meaning they already existed
-          console.log('User already exists - login successful')
           alert('An account with this email already exists and you have been signed in.')
           // Clear the form fields after successful login
           setEmail('')
@@ -88,25 +73,20 @@ export default function Home() {
           // The session will be automatically set by the auth state change
         } else if (loginError && loginError.message.includes('Email not confirmed')) {
           // User exists but email not confirmed
-          console.log('User exists but email not confirmed')
           setError('An account with this email already exists but is not confirmed. Please check your email for the confirmation link.')
         } else if (loginError && loginError.message.includes('Invalid login credentials')) {
           // User exists but wrong password was provided
-          console.log('User exists but wrong password provided')
           setError('An account with this email already exists. Please use the correct password to sign in, or use "Forgot password?" if needed.')
         } else {
           // Genuinely new user
-          console.log('New user created, needs email confirmation')
           setError(null)
           alert('Account created! Check your email for confirmation link.')
         }
       } else if (data.user && data.user.email_confirmed_at) {
         // User already exists and is confirmed - this shouldn't happen in signup
-        console.log('User already exists and is confirmed')
         setError('An account with this email already exists. Please sign in instead.')
       } else {
         // Successful signup
-        console.log('Successful signup - default case')
         setError(null)
         alert('Account created! Check your email for confirmation link.')
       }
@@ -217,9 +197,7 @@ export default function Home() {
               onClick={handleForgotPassword}
               disabled={resetPasswordLoading || !email.trim()}
               style={{ 
-                color: 'var(--gray-11)',
-                width: '100%',
-                justifyContent: 'center'
+                color: 'var(--gray-11)'
               }}
             >
               {resetPasswordLoading ? 'Sending...' : 'Forgot password?'}
@@ -228,10 +206,6 @@ export default function Home() {
           <Button 
             variant="ghost" 
             onClick={() => setIsSignUpMode(!isSignUpMode)}
-            style={{ 
-              width: '100%',
-              justifyContent: 'center'
-            }}
           >
             {isSignUpMode 
               ? 'Already have an account? Sign In' 
@@ -250,7 +224,8 @@ export default function Home() {
         <Heading>🎉 Hello World!</Heading>
         <Text>
           Welcome {session.user.user_metadata?.display_name || session.user.email}! 
-          This is your first Next.js app.
+          <br />
+          What an empty page here... right?
         </Text>
         {!session.user.user_metadata?.display_name && (
           <Text color="orange" size="2">
