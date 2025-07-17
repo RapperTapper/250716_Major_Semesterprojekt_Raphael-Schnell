@@ -55,30 +55,43 @@ export default function Home() {
       })
 
       if (error) {
+        // Log the full error to console for debugging
+        console.log('Supabase signUp error:', error)
+        console.log('Error message:', error.message)
+        console.log('Error code:', error.status)
+        
         // Check if the error is due to existing account
         if (error.message.includes('already registered') || 
             error.message.includes('already been registered') ||
             error.message.includes('already exists') ||
             error.message.includes('User already registered') ||
             error.message.includes('already in use') ||
-            error.message.includes('duplicate')) {
+            error.message.includes('duplicate') ||
+            error.message.includes('email address not available') ||
+            error.message.toLowerCase().includes('email') && error.message.toLowerCase().includes('taken')) {
           setError('An account with this email already exists. Please sign in instead or use a different email address.')
         } else {
           setError(error.message)
         }
       } else if (data.user) {
-        // User was created successfully
-        if (data.session) {
+        // Check if user was actually created or if it already existed
+        // If user exists but no session and no error, it might be a duplicate email case
+        if (!data.session && data.user && !data.user.email_confirmed_at) {
+          // This could be a new user needing confirmation OR an existing unconfirmed user
+          // We need to be more careful here
+          setError(null)
+          alert('Account created! Please check your email for the confirmation link before signing in.')
+          setEmail('')
+          setPassword('')
+        } else if (data.session) {
           // User is immediately signed in (email confirmation disabled)
           setError(null)
           setEmail('')
           setPassword('')
           alert('Account created and signed in successfully!')
         } else {
-          // User created but needs email confirmation
-          setError(null)
-          alert('Account created! Please check your email for the confirmation link before signing in.')
-          // Clear form fields
+          // Ambiguous case - could be existing user
+          setError('If this email is not already registered, please check your email for the confirmation link. Otherwise, try signing in instead.')
           setEmail('')
           setPassword('')
         }
