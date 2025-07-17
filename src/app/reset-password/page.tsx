@@ -15,17 +15,38 @@ function ResetPasswordForm() {
   const searchParams = useSearchParams()
 
   useEffect(() => {
-    // Check if we have the necessary URL parameters from the email link
-    const token = searchParams.get('token')
-    const type = searchParams.get('type')
-    
-    if (!token || type !== 'recovery') {
-      setError('Invalid or expired reset link. Please request a new password reset.')
-      return
+    const handleRecoverySession = async () => {
+      // Check if we have the necessary URL parameters from the email link
+      const token = searchParams.get('token')
+      const type = searchParams.get('type')
+      
+      if (!token || type !== 'recovery') {
+        setError('Invalid or expired reset link. Please request a new password reset.')
+        return
+      }
+
+      try {
+        // Exchange the recovery token for a session
+        const { data, error } = await supabase.auth.verifyOtp({
+          token_hash: token,
+          type: 'recovery'
+        })
+
+        if (error) {
+          console.error('Recovery session error:', error)
+          setError('Invalid or expired reset link. Please request a new password reset.')
+          return
+        }
+
+        // Session is now established, user can reset password
+        console.log('Recovery session established successfully')
+      } catch (error) {
+        console.error('Recovery error:', error)
+        setError('Invalid or expired reset link. Please request a new password reset.')
+      }
     }
 
-    // The token will be automatically handled by Supabase when updateUser is called
-    // No need to manually set session here
+    handleRecoverySession()
   }, [searchParams])
 
   const handleResetPassword = async () => {
