@@ -452,10 +452,112 @@ export default function Dashboard() {
           <Flex direction="column" gap="2">
             <Heading size="3">Quick Actions</Heading>
             <Flex gap="2">
-              <Button variant="soft">View Profile</Button>
-              <Button variant="soft">Settings</Button>
-              <Button variant="soft">Help</Button>
+              <Button 
+                variant="soft" 
+                asChild
+              >
+                <a 
+                  href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                >
+                  Let&apos;s roll
+                </a>
+              </Button>
+              <Button 
+                variant="soft" 
+                asChild
+              >
+                <a 
+                  href="https://www.youtube.com/watch?v=3WAOxKOmR90"
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                >
+                  Nice!
+                </a>
+              </Button>
+              <Button 
+                variant="soft" 
+                asChild
+              >
+                <a 
+                  href="https://www.youtube.com/watch?v=2Q_ZzBGPdqE"
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                >
+                  Help
+                </a>
+              </Button>
             </Flex>
+          </Flex>
+        </Card>
+
+        <Card>
+          <Flex direction="column" gap="2">
+            <Heading size="3">About this Project</Heading>
+            <Text size="2" style={{ lineHeight: '1.6' }}>
+              This project was developed in 2025 by{' '}
+              <a 
+                href="https://www.linkedin.com/in/raphaelschnell/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ 
+                  color: 'var(--blue-11)', 
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontWeight: 'bold'
+                }}
+              >
+                Raphael Schnell
+                <svg 
+                  width="16" 
+                  height="16" 
+                  viewBox="0 0 24 24" 
+                  fill="currentColor"
+                  style={{ flexShrink: 0 }}
+                >
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                </svg>
+              </a>
+              {' '}as part of the Major Media Applications course at the{' '}
+              <a 
+                href="https://www.fhgr.ch/mmp"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ 
+                  color: 'var(--blue-11)', 
+                  fontWeight: 'bold'
+                }}
+              >
+                University of Applied Sciences of the Grisons (FHGR)
+              </a>
+              . Built with{' '}
+              <a 
+                href="https://nextjs.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ 
+                  color: 'var(--blue-11)',
+                  fontWeight: 'bold'
+                }}
+              >
+                Next.js
+              </a>
+              {' '}and powered by{' '}
+              <a 
+                href="https://supabase.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ 
+                  color: 'var(--blue-11)', 
+                  fontWeight: 'bold'
+                }}
+              >
+                Supabase
+              </a>
+              {' '}in the background, the goal was to implement a secure login system using Row-Level Security (RLS) to manage access control, ensuring that certain pages are only accessible to authenticated users.
+            </Text>
           </Flex>
         </Card>
       </Flex>
