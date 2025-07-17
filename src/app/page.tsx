@@ -18,14 +18,24 @@ export default function Home() {
   const router = useRouter()
 
   useEffect(() => {
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
     })
 
+    // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth event:', event, session)
       setSession(session)
+      
+      // Handle successful sign-in after email confirmation
+      if (event === 'SIGNED_IN' && session) {
+        setError(null)
+        setEmail('')
+        setPassword('')
+      }
     })
 
     return () => subscription.unsubscribe()
@@ -40,6 +50,9 @@ export default function Home() {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
       })
 
       if (error) {
