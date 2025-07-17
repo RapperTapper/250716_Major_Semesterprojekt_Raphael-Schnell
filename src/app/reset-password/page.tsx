@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { Button, TextField, Flex, Text, Heading, Container } from '@radix-ui/themes'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function ResetPassword() {
+function ResetPasswordForm() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -68,8 +68,8 @@ export default function ResetPassword() {
         router.push('/')
       }, 2000)
 
-    } catch (error: any) {
-      setError(error.message)
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'An error occurred')
     } finally {
       setLoading(false)
     }
@@ -96,7 +96,7 @@ export default function ResetPassword() {
       <Flex direction="column" gap="3">
         <Heading>Reset Your Password</Heading>
         <Text size="2" color="gray">
-          Enter your new password below. Make sure it's secure and easy for you to remember.
+          Enter your new password below. Make sure it&apos;s secure and easy for you to remember.
         </Text>
         
         <Flex direction="column" gap="1">
@@ -145,5 +145,17 @@ export default function ResetPassword() {
         </Text>
       </Flex>
     </Container>
+  )
+}
+
+export default function ResetPassword() {
+  return (
+    <Suspense fallback={
+      <Container size="1" style={{ paddingTop: '100px' }}>
+        <Text>Loading...</Text>
+      </Container>
+    }>
+      <ResetPasswordForm />
+    </Suspense>
   )
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { Button, Flex, Text, Heading, Container, Card, TextField, Dialog } from '@radix-ui/themes'
+import { Button, Flex, Text, Heading, Container, Card, TextField } from '@radix-ui/themes'
 import { Session } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 import { Pencil1Icon } from '@radix-ui/react-icons'
@@ -152,8 +152,8 @@ export default function Dashboard() {
       const { data: { session: updatedSession } } = await supabase.auth.getSession()
       setSession(updatedSession)
 
-    } catch (error: any) {
-      setUpdateError(error.message)
+    } catch (error: unknown) {
+      setUpdateError(error instanceof Error ? error.message : 'An error occurred')
     } finally {
       setUpdateLoading(false)
     }
@@ -210,10 +210,10 @@ export default function Dashboard() {
           }}>
             <Flex direction="column" gap="3">
               <Flex align="center" gap="2">
-                <Text color="blue" weight="medium" size="3">👋 Welcome! Let's personalize your profile</Text>
+                <Text color="blue" weight="medium" size="3">👋 Welcome! Let&apos;s personalize your profile</Text>
               </Flex>
               <Text size="2" color="blue">
-                We notice you haven't set up your display name yet. Adding a display name makes your experience more personal and friendly!
+                We notice you haven&apos;t set up your display name yet. Adding a display name makes your experience more personal and friendly!
               </Text>
               <Button 
                 onClick={handleEditProfile}
@@ -291,10 +291,10 @@ export default function Dashboard() {
                     border: '1px solid var(--blue-6)'
                   }}>
                     <Text color="blue" size="2" weight="medium">
-                      ✨ Let's set up your display name!
+                      ✨ Let&apos;s set up your display name!
                     </Text>
                     <Text size="1" color="blue">
-                      This is how other users will see you and how we'll greet you when you log in.
+                      This is how other users will see you and how we&apos;ll greet you when you log in.
                     </Text>
                   </Flex>
                 )}
@@ -341,7 +341,7 @@ export default function Dashboard() {
                     onChange={(e) => setEditEmail(e.target.value)}
                   />
                   <Text size="1" color="gray">
-                    ⚠️ Changing your email requires verification. You'll need to click the confirmation link sent to both your old and new email addresses.
+                    ⚠️ Changing your email requires verification. You&apos;ll need to click the confirmation link sent to both your old and new email addresses.
                   </Text>
                 </Flex>
 
