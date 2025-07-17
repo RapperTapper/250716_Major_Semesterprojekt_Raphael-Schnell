@@ -74,11 +74,25 @@ export default function Home() {
           setError(error.message)
         }
       } else if (data.user) {
-        // Check if user was actually created or if it already existed
-        // If user exists but no session and no error, it might be a duplicate email case
-        if (!data.session && data.user && !data.user.email_confirmed_at) {
-          // This could be a new user needing confirmation OR an existing unconfirmed user
-          // We need to be more careful here
+        // Log the data to understand what we're getting from Supabase
+        console.log('Supabase signUp data:', data)
+        console.log('User object:', data.user)
+        console.log('Session object:', data.session)
+        console.log('User created_at:', data.user.created_at)
+        console.log('User email_confirmed_at:', data.user.email_confirmed_at)
+        
+        // Check if this is actually a new user or an existing one
+        const now = new Date()
+        const userCreatedAt = new Date(data.user.created_at)
+        const timeDiffInSeconds = (now.getTime() - userCreatedAt.getTime()) / 1000
+        
+        // If the user was created more than 30 seconds ago, it's likely an existing user
+        if (timeDiffInSeconds > 30) {
+          setError('An account with this email already exists. Please sign in instead or use a different email address.')
+          setEmail('')
+          setPassword('')
+        } else if (!data.session && data.user && !data.user.email_confirmed_at) {
+          // This is likely a genuinely new user needing confirmation
           setError(null)
           alert('Account created! Please check your email for the confirmation link before signing in.')
           setEmail('')
@@ -187,10 +201,6 @@ export default function Home() {
 
     if (error) {
       setError(error.message)
-    } else {
-      // Clear the input field after successful save
-      setDisplayName('')
-      alert('Display name saved successfully!')
     }
 
     setSaveDisplayNameLoading(false)
