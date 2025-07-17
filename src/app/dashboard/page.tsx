@@ -255,7 +255,7 @@ export default function Dashboard() {
               }
             </Text>
             <Text color="gray">
-              This page is only accessible to authenticated users.
+              Only authenticated users can access this page.
             </Text>
           </Flex>
         </Card>

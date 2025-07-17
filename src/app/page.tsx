@@ -43,7 +43,6 @@ export default function Home() {
       })
 
       if (error) {
-        
         // Check if the error is due to existing account
         if (error.message.includes('already registered') || 
             error.message.includes('already been registered') ||
@@ -55,40 +54,25 @@ export default function Home() {
         } else {
           setError(error.message)
         }
-      } else if (data.user && data.user.email_confirmed_at === undefined && !data.session) {
-        // Check if this might be a duplicate signup attempt
-        // Try to sign in with the same credentials to see if user already exists
-        
-        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
-        
-        if (loginData.session) {
-          // User successfully logged in, meaning they already existed
-          alert('An account with this email already exists and you have been signed in.')
-          // Clear the form fields after successful login
+      } else if (data.user) {
+        // User was created successfully
+        if (data.session) {
+          // User is immediately signed in (email confirmation disabled)
+          setError(null)
           setEmail('')
           setPassword('')
-          // The session will be automatically set by the auth state change
-        } else if (loginError && loginError.message.includes('Email not confirmed')) {
-          // User exists but email not confirmed
-          setError('An account with this email already exists but is not confirmed. Please check your email for the confirmation link.')
-        } else if (loginError && loginError.message.includes('Invalid login credentials')) {
-          // User exists but wrong password was provided
-          setError('An account with this email already exists. Please use the correct password to sign in, or use "Forgot password?" if needed.')
+          alert('Account created and signed in successfully!')
         } else {
-          // Genuinely new user
+          // User created but needs email confirmation
           setError(null)
-          alert('Account created! Check your email for confirmation link.')
+          alert('Account created! Please check your email for the confirmation link before signing in.')
+          // Clear form fields
+          setEmail('')
+          setPassword('')
         }
-      } else if (data.user && data.user.email_confirmed_at) {
-        // User already exists and is confirmed - this shouldn't happen in signup
-        setError('An account with this email already exists. Please sign in instead.')
       } else {
-        // Successful signup
-        setError(null)
-        alert('Account created! Check your email for confirmation link.')
+        // Unexpected case
+        setError('Something went wrong during account creation. Please try again.')
       }
     } else {
       // Login mode
