@@ -48,7 +48,41 @@ export default function Home() {
     setError(null)
 
     if (isSignUpMode) {
-      // Sign up mode - simple and direct
+      // Check if user already exists before attempting signup
+      console.log('🔍 Checking if user already exists...')
+      
+      // Try to sign in first to check if user exists
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInData.user && !signInError) {
+        // User exists and credentials are correct
+        console.log('🚨 USER ALREADY EXISTS - successful sign in')
+        setError('This email is already registered. You have been signed in instead.')
+        setEmail('')
+        setPassword('')
+        setLoading(false)
+        return
+      }
+
+      if (signInError && !signInError.message.includes('Invalid login credentials')) {
+        // Some other error occurred (like email not confirmed)
+        if (signInError.message.includes('Email not confirmed')) {
+          console.log('🚨 USER EXISTS BUT EMAIL NOT CONFIRMED')
+          setError('This email is already registered but not confirmed. Please check your email for the confirmation link, or contact support if you need a new confirmation email.')
+        } else {
+          console.log('🚨 USER EXISTS - other sign in error:', signInError.message)
+          setError('This email is already in use. Please sign in instead or use a different email address.')
+        }
+        setLoading(false)
+        return
+      }
+
+      // If we reach here, either user doesn't exist OR credentials are wrong
+      // Now attempt signup
+      console.log('👤 Attempting signup for potentially new user...')
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -62,53 +96,44 @@ export default function Home() {
         
         setError(error.message)
       } else if (data.user) {
-        console.log('=== DETAILED SUPABASE RESPONSE ANALYSIS ===')
-        console.log('Full data object:', JSON.stringify(data, null, 2))
-        console.log('User object:', JSON.stringify(data.user, null, 2))
-        console.log('Session object:', data.session)
+        console.log('=== ANALYZING SIGNUP RESPONSE ===')
         console.log('User ID:', data.user.id)
         console.log('User email:', data.user.email)
-        console.log('User created_at:', data.user.created_at)
-        console.log('User email_confirmed_at:', data.user.email_confirmed_at)
-        console.log('User last_sign_in_at:', data.user.last_sign_in_at)
-        console.log('User metadata:', data.user.user_metadata)
-        console.log('User app_metadata:', data.user.app_metadata)
-        console.log('User role:', data.user.role)
-        console.log('User aud:', data.user.aud)
-        console.log('=== END ANALYSIS ===')
-        
-        // Better logic to detect existing users
-        // Check if recovery_sent_at exists and is different from created_at
-        // This indicates the user already existed and had password recovery before
-        const hasRecoveryHistory = data.user.recovery_sent_at && 
-          data.user.recovery_sent_at !== data.user.created_at
-        
-        // Check if confirmation was just sent (indicates existing user trying to sign up again)
-        const confirmationJustSent = data.user.confirmation_sent_at === data.user.created_at
-        
-        console.log('Has recovery history:', hasRecoveryHistory)
-        console.log('Confirmation just sent:', confirmationJustSent)
-        console.log('Recovery sent at:', data.user.recovery_sent_at)
         console.log('Created at:', data.user.created_at)
+        console.log('Email confirmed at:', data.user.email_confirmed_at)
+        console.log('Last sign in at:', data.user.last_sign_in_at)
+        console.log('Confirmation sent at:', data.user.confirmation_sent_at)
+        console.log('Session:', data.session ? 'Present' : 'Null')
         
-        if (hasRecoveryHistory) {
-          // User definitely existed before - they had password recovery
-          setError('This email is already in use. Please sign in instead or use a different email address.')
+        // Check if this is a "fake" user creation by Supabase
+        // Indicators: no session, created very recently, but other fields suggest existing user
+        const now = new Date()
+        const createdAt = new Date(data.user.created_at)
+        const timeDiffMs = now.getTime() - createdAt.getTime()
+        
+        console.log('Time since creation:', timeDiffMs, 'ms')
+        console.log('Has session:', !!data.session)
+        console.log('Has email confirmed before:', !!data.user.email_confirmed_at)
+        console.log('Has last sign in before:', !!data.user.last_sign_in_at)
+        
+        // If no session AND user was "created" just now, it might be Supabase's fake response
+        if (!data.session && timeDiffMs < 2000) {
+          console.log('🚨 SUSPICIOUS: Likely existing user - Supabase fake response detected')
+          setError('This email is already registered. Please sign in instead, or use "Forgot password?" if needed.')
+        } else if (data.session) {
+          // User is immediately signed in - genuinely new
+          setError(null)
+          setEmail('')
+          setPassword('')
+          console.log('🎉 New user created and signed in immediately')
+          alert('Account created and signed in successfully!')
         } else {
-          // This appears to be a genuinely new user
-          if (data.session) {
-            // User is immediately signed in
-            setError(null)
-            setEmail('')
-            setPassword('')
-            alert('Account created and signed in successfully!')
-          } else {
-            // User created but needs email confirmation
-            setError(null)
-            alert('Account created! Please check your email for the confirmation link before signing in.')
-            setEmail('')
-            setPassword('')
-          }
+          // User created but needs email confirmation - genuinely new
+          setError(null)
+          console.log('📧 New user created, confirmation email sent')
+          alert('Account created! Please check your email for the confirmation link before signing in.')
+          setEmail('')
+          setPassword('')
         }
       } else {
         setError('Something went wrong during account creation. Please try again.')
@@ -201,6 +226,10 @@ export default function Home() {
 
     if (error) {
       setError(error.message)
+    } else {
+      // Clear the input field after successful save
+      setDisplayName('')
+      alert('Display name saved successfully!')
     }
 
     setSaveDisplayNameLoading(false)
