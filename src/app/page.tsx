@@ -43,11 +43,44 @@ export default function Home() {
     return () => subscription.unsubscribe()
   }, [])
 
+  const checkUserExists = async (email: string): Promise<boolean> => {
+    try {
+      // Try to trigger a password reset - if user doesn't exist, it will return an error
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+      
+      // If no error, user exists
+      // If error contains "not found" or similar, user doesn't exist
+      if (error && (error.message.includes('User not found') || 
+                   error.message.includes('No user found') ||
+                   error.message.includes('not found') ||
+                   error.message.includes('Invalid email') ||
+                   error.message.includes('does not exist'))) {
+        return false // User doesn't exist
+      }
+      
+      return true // User exists (no error or different error)
+    } catch (error) {
+      console.error('Error checking if user exists:', error)
+      return false // Assume user doesn't exist on unexpected error
+    }
+  }
+
   const handleAuth = async () => {
     setLoading(true)
     setError(null)
 
     if (isSignUpMode) {
+      // Check if user already exists before attempting signup
+      const userExists = await checkUserExists(email)
+      
+      if (userExists) {
+        setError('An account with this email already exists. Please sign in instead or use a different email address.')
+        setLoading(false)
+        return
+      }
+
       // Sign up mode
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -60,52 +93,21 @@ export default function Home() {
         console.log('Error message:', error.message)
         console.log('Error code:', error.status)
         
-        // Check if the error is due to existing account
-        if (error.message.includes('already registered') || 
-            error.message.includes('already been registered') ||
-            error.message.includes('already exists') ||
-            error.message.includes('User already registered') ||
-            error.message.includes('already in use') ||
-            error.message.includes('duplicate') ||
-            error.message.includes('email address not available') ||
-            error.message.toLowerCase().includes('email') && error.message.toLowerCase().includes('taken')) {
-          setError('An account with this email already exists. Please sign in instead or use a different email address.')
-        } else {
-          setError(error.message)
-        }
+        setError(error.message)
       } else if (data.user) {
-        // Log the data to understand what we're getting from Supabase
+        // User was successfully created
         console.log('Supabase signUp data:', data)
-        console.log('User object:', data.user)
-        console.log('Session object:', data.session)
-        console.log('User created_at:', data.user.created_at)
-        console.log('User email_confirmed_at:', data.user.email_confirmed_at)
         
-        // Check if this is actually a new user or an existing one
-        const now = new Date()
-        const userCreatedAt = new Date(data.user.created_at)
-        const timeDiffInSeconds = (now.getTime() - userCreatedAt.getTime()) / 1000
-        
-        // If the user was created more than 30 seconds ago, it's likely an existing user
-        if (timeDiffInSeconds > 30) {
-          setError('An account with this email already exists. Please sign in instead or use a different email address.')
-          setEmail('')
-          setPassword('')
-        } else if (!data.session && data.user && !data.user.email_confirmed_at) {
-          // This is likely a genuinely new user needing confirmation
-          setError(null)
-          alert('Account created! Please check your email for the confirmation link before signing in.')
-          setEmail('')
-          setPassword('')
-        } else if (data.session) {
+        if (data.session) {
           // User is immediately signed in (email confirmation disabled)
           setError(null)
           setEmail('')
           setPassword('')
           alert('Account created and signed in successfully!')
         } else {
-          // Ambiguous case - could be existing user
-          setError('If this email is not already registered, please check your email for the confirmation link. Otherwise, try signing in instead.')
+          // User created but needs email confirmation
+          setError(null)
+          alert('Account created! Please check your email for the confirmation link before signing in.')
           setEmail('')
           setPassword('')
         }
