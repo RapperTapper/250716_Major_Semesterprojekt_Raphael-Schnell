@@ -94,8 +94,17 @@ export default function Home() {
         console.log('Error status:', error.status)
         console.log('Error name:', error.name)
         
+        // Check for password-related errors first
+        if (error.message.includes('Password should be at least') ||
+            error.message.includes('password') ||
+            error.message.includes('Password') ||
+            error.message.includes('weak password') ||
+            error.message.includes('too short') ||
+            error.message.includes('must contain')) {
+          setError(error.message)
+        }
         // Check for specific error messages that indicate user already exists
-        if (error.message.includes('User already registered') || 
+        else if (error.message.includes('User already registered') || 
             error.message.includes('already registered') ||
             error.message.includes('already exists') ||
             error.message.includes('duplicate') ||
