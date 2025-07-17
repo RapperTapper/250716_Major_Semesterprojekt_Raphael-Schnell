@@ -16,10 +16,10 @@ function ResetPasswordForm() {
 
   useEffect(() => {
     // Check if we have the necessary URL parameters from the email link
-    const token_hash = searchParams.get('token_hash')
+    const token = searchParams.get('token')
     const type = searchParams.get('type')
     
-    if (!token_hash || type !== 'recovery') {
+    if (!token || type !== 'recovery') {
       setError('Invalid or expired reset link. Please request a new password reset.')
       return
     }
