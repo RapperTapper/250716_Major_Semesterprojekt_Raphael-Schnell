@@ -4,6 +4,7 @@ import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import '@radix-ui/themes/styles.css';
 import ThemeProvider from '@/components/ThemeProvider';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -20,6 +21,7 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           {children}
+          <SpeedInsights />
         </ThemeProvider>
       </body>
     </html>
