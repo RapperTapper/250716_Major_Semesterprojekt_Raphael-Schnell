@@ -6,6 +6,7 @@ import { Button, Flex, Text, Heading, Container, Card, TextField } from '@radix-
 import { Session } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 import { Pencil1Icon } from '@radix-ui/react-icons'
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export default function Dashboard() {
   const [session, setSession] = useState<Session | null>(null)
@@ -80,6 +81,16 @@ export default function Dashboard() {
     setUpdateSuccess(false)
     setEmailChangeRequested(false)
     setPendingEmail(null)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && editDisplayName.trim() && !updateLoading) {
+      e.preventDefault()
+      handleSaveProfile()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      handleCancelEdit()
+    }
   }
 
   const handleSaveProfile = async () => {
@@ -179,7 +190,11 @@ export default function Dashboard() {
       <Flex direction="column" gap="4">
         <Flex justify="between" align="center">
           <Heading size="6">Dashboard</Heading>
-          <Button onClick={handleLogout} variant="outline">
+          <Button 
+            onClick={handleLogout} 
+            variant="outline"
+            tabIndex={1}
+          >
             Logout
           </Button>
         </Flex>
@@ -218,6 +233,7 @@ export default function Dashboard() {
               <Button 
                 onClick={handleEditProfile}
                 style={{ alignSelf: 'flex-start' }}
+                tabIndex={2}
               >
                 Set Up Display Name
               </Button>
@@ -254,6 +270,7 @@ export default function Dashboard() {
                   size="1" 
                   variant="ghost" 
                   onClick={handleEditProfile}
+                  tabIndex={3}
                 >
                   <Pencil1Icon width="14" height="14" />
                   Edit
@@ -282,38 +299,42 @@ export default function Dashboard() {
                 </Text>
               </Flex>
             ) : (
-              <Flex direction="column" gap="3">
-                {!session.user.user_metadata?.display_name && (
-                  <Flex direction="column" gap="2" style={{ 
-                    padding: '12px', 
-                    backgroundColor: 'var(--blue-3)', 
-                    borderRadius: '6px',
-                    border: '1px solid var(--blue-6)'
-                  }}>
-                    <Text color="blue" size="2" weight="medium">
-                      ✨ Let&apos;s set up your display name!
+              <form onSubmit={(e) => { e.preventDefault(); if (editDisplayName.trim() && !updateLoading) handleSaveProfile(); }}>
+                <Flex direction="column" gap="3">
+                  {!session.user.user_metadata?.display_name && (
+                    <Flex direction="column" gap="2" style={{ 
+                      padding: '12px', 
+                      backgroundColor: 'var(--blue-3)', 
+                      borderRadius: '6px',
+                      border: '1px solid var(--blue-6)'
+                    }}>
+                      <Text color="blue" size="2" weight="medium">
+                        ✨ Let&apos;s set up your display name!
+                      </Text>
+                      <Text size="1" color="blue">
+                        This is how other users will see you and how we&apos;ll greet you when you log in.
+                      </Text>
+                    </Flex>
+                  )}
+                  
+                  <Flex direction="column" gap="1">
+                    <Text size="2" weight="medium">
+                      Display Name 
+                      {!session.user.user_metadata?.display_name && (
+                        <Text as="span" color="blue" size="1"> (Recommended)</Text>
+                      )}
                     </Text>
-                    <Text size="1" color="blue">
-                      This is how other users will see you and how we&apos;ll greet you when you log in.
-                    </Text>
-                  </Flex>
-                )}
-                
-                <Flex direction="column" gap="1">
-                  <Text size="2" weight="medium">
-                    Display Name 
-                    {!session.user.user_metadata?.display_name && (
-                      <Text as="span" color="blue" size="1"> (Recommended)</Text>
-                    )}
-                  </Text>
-                  <TextField.Root
-                    placeholder={
-                      !session.user.user_metadata?.display_name 
-                        ? "Enter your preferred name (e.g., John Smith)" 
-                        : "Enter your display name"
-                    }
-                    value={editDisplayName}
+                    <TextField.Root
+                      placeholder={
+                        !session.user.user_metadata?.display_name 
+                          ? "Enter your preferred name (e.g., John Smith)" 
+                          : "Enter your display name"
+                      }                    value={editDisplayName}
                     onChange={(e) => setEditDisplayName(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    autoComplete="name"
+                    autoFocus
+                    tabIndex={1}
                     style={
                       !session.user.user_metadata?.display_name 
                         ? { borderColor: 'var(--blue-8)' }
@@ -339,6 +360,9 @@ export default function Dashboard() {
                     placeholder="Enter your email"
                     value={editEmail}
                     onChange={(e) => setEditEmail(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    autoComplete="email"
+                    tabIndex={2}
                   />
                   <Text size="1" color="gray">
                     ⚠️ Changing your email requires verification. You&apos;ll need to click the confirmation link sent to both your old and new email addresses.
@@ -355,6 +379,9 @@ export default function Dashboard() {
                     placeholder="Enter new password (leave empty to keep current)"
                     value={editPassword}
                     onChange={(e) => setEditPassword(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    autoComplete="new-password"
+                    tabIndex={3}
                   />
                   <Text size="1" color="gray">
                     💡 Only enter a password if you want to change it. Leave empty to keep your current password.
@@ -395,9 +422,11 @@ export default function Dashboard() {
 
                 <Flex gap="2">
                   <Button 
+                    type="submit"
                     onClick={handleSaveProfile}
                     loading={updateLoading}
                     disabled={updateLoading || !editDisplayName.trim()}
+                    tabIndex={4}
                   >
                     {!session.user.user_metadata?.display_name && editDisplayName.trim() 
                       ? 'Complete Profile Setup' 
@@ -405,14 +434,17 @@ export default function Dashboard() {
                     }
                   </Button>
                   <Button 
+                    type="button"
                     variant="outline" 
                     onClick={handleCancelEdit}
                     disabled={updateLoading}
+                    tabIndex={5}
                   >
                     Cancel
                   </Button>
                 </Flex>
               </Flex>
+            </form>
             )}
           </Flex>
         </Card>

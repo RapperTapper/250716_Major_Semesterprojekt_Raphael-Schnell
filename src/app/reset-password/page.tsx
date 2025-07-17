@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { Button, TextField, Flex, Text, Heading, Container } from '@radix-ui/themes'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 function ResetPasswordForm() {
   const [newPassword, setNewPassword] = useState('')
@@ -75,6 +76,13 @@ function ResetPasswordForm() {
     }
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && newPassword && confirmPassword && !loading) {
+      e.preventDefault()
+      handleResetPassword()
+    }
+  }
+
   if (success) {
     return (
       <Container size="1" style={{ paddingTop: '100px' }}>
@@ -93,57 +101,70 @@ function ResetPasswordForm() {
 
   return (
     <Container size="1" style={{ paddingTop: '100px' }}>
-      <Flex direction="column" gap="3">
-        <Heading>Reset Your Password</Heading>
-        <Text size="2" color="gray">
-          Enter your new password below. Make sure it&apos;s secure and easy for you to remember.
-        </Text>
-        
-        <Flex direction="column" gap="1">
-          <Text size="2" weight="medium">New Password</Text>
-          <TextField.Root
-            type="password"
-            placeholder="Enter your new password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-          />
-        </Flex>
-
-        <Flex direction="column" gap="1">
-          <Text size="2" weight="medium">Confirm New Password</Text>
-          <TextField.Root
-            type="password"
-            placeholder="Confirm your new password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-        </Flex>
-
-        <Button 
-          onClick={handleResetPassword}
-          disabled={loading || !newPassword || !confirmPassword}
-        >
-          {loading ? 'Updating Password...' : 'Update Password'}
-        </Button>
-
-        <Button 
-          variant="ghost" 
-          onClick={() => router.push('/')}
-          disabled={loading}
-        >
-          Back to Login
-        </Button>
-
-        {error && (
-          <Text color="red" size="2">
-            {error}
+      <form onSubmit={(e) => { e.preventDefault(); if (newPassword && confirmPassword && !loading) handleResetPassword(); }}>
+        <Flex direction="column" gap="3">
+          <Heading>Reset Your Password</Heading>
+          <Text size="2" color="gray">
+            Enter your new password below. Make sure it&apos;s secure and easy for you to remember.
           </Text>
-        )}
+          
+          <Flex direction="column" gap="1">
+            <Text size="2" weight="medium">New Password</Text>
+            <TextField.Root
+              type="password"
+              placeholder="Enter your new password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              onKeyDown={handleKeyDown}
+              autoComplete="new-password"
+              autoFocus
+              tabIndex={1}
+            />
+          </Flex>
 
-        <Text size="1" color="gray" style={{ textAlign: 'center' }}>
-          💡 Choose a strong password with at least 6 characters
-        </Text>
-      </Flex>
+          <Flex direction="column" gap="1">
+            <Text size="2" weight="medium">Confirm New Password</Text>
+            <TextField.Root
+              type="password"
+              placeholder="Confirm your new password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              onKeyDown={handleKeyDown}
+              autoComplete="new-password"
+              tabIndex={2}
+            />
+          </Flex>
+
+          <Button 
+            type="submit"
+            onClick={handleResetPassword}
+            disabled={loading || !newPassword || !confirmPassword}
+            tabIndex={3}
+          >
+            {loading ? 'Updating Password...' : 'Update Password'}
+          </Button>
+
+          <Button 
+            type="button"
+            variant="ghost" 
+            onClick={() => router.push('/')}
+            disabled={loading}
+            tabIndex={4}
+          >
+            Back to Login
+          </Button>
+
+          {error && (
+            <Text color="red" size="2">
+              {error}
+            </Text>
+          )}
+
+          <Text size="1" color="gray" style={{ textAlign: 'center' }}>
+            💡 Choose a strong password with at least 6 characters
+          </Text>
+        </Flex>
+      </form>
     </Container>
   )
 }

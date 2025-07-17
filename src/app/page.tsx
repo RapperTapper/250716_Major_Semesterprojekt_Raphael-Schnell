@@ -6,6 +6,7 @@ import { Button, TextField, Flex, Text, Heading, Container, Tooltip } from '@rad
 import { Session } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export default function Home() {
   const [session, setSession] = useState<Session | null>(null)
@@ -115,6 +116,13 @@ export default function Home() {
     setLoading(false)
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && email && password && !loading) {
+      e.preventDefault()
+      handleAuth()
+    }
+  }
+
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut()
@@ -150,70 +158,85 @@ export default function Home() {
   if (!session) {
     return (
       <Container size="1" style={{ paddingTop: '100px' }}>
-        <Flex direction="column" gap="3">
-          <Heading>{isSignUpMode ? 'Create Account' : 'Welcome Back'}</Heading>
-          <Text size="2" color="gray">
-            {isSignUpMode 
-              ? 'Enter your details to create a new account' 
-              : 'Enter your credentials to sign in'
-            }
-          </Text>
-          <TextField.Root
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <TextField.Root
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <Tooltip 
-            content={
-              !email.trim() && !password.trim() 
-                ? "Please enter both email and password" 
-                : !email.trim() 
-                ? "Please enter your email address" 
-                : !password.trim() 
-                ? "Please enter a password" 
-                : isSignUpMode 
-                ? "Create your new account" 
-                : "Sign in to your account"
-            }
-          >
-            <Button 
-              onClick={handleAuth} 
-              disabled={loading || !email || !password}
+        <form onSubmit={(e) => { e.preventDefault(); if (email && password && !loading) handleAuth(); }}>
+          <Flex direction="column" gap="3">
+            <Heading>{isSignUpMode ? 'Create Account' : 'Welcome Back'}</Heading>
+            <Text size="2" color="gray">
+              {isSignUpMode 
+                ? 'Enter your details to create a new account' 
+                : 'Enter your credentials to sign in'
+              }
+            </Text>
+            <TextField.Root
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={handleKeyDown}
+              autoComplete="email"
+              autoFocus
+              tabIndex={1}
+            />
+            <TextField.Root
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={handleKeyDown}
+              autoComplete={isSignUpMode ? "new-password" : "current-password"}
+              tabIndex={2}
+            />
+            <Tooltip 
+              content={
+                !email.trim() && !password.trim() 
+                  ? "Please enter both email and password" 
+                  : !email.trim() 
+                  ? "Please enter your email address" 
+                  : !password.trim() 
+                  ? "Please enter a password" 
+                  : isSignUpMode 
+                  ? "Create your new account" 
+                  : "Sign in to your account"
+              }
             >
-              {loading ? 'Processing...' : (isSignUpMode ? 'Create Account' : 'Sign In')}
-            </Button>
-          </Tooltip>
-          <Tooltip 
-            content={!email.trim() ? "Please enter your email address first" : "Send password reset email"}
-          >
+              <Button 
+                type="submit"
+                onClick={handleAuth} 
+                disabled={loading || !email || !password}
+                tabIndex={3}
+              >
+                {loading ? 'Processing...' : (isSignUpMode ? 'Create Account' : 'Sign In')}
+              </Button>
+            </Tooltip>
+            <Tooltip 
+              content={!email.trim() ? "Please enter your email address first" : "Send password reset email"}
+            >
+              <Button 
+                type="button"
+                variant="ghost" 
+                onClick={handleForgotPassword}
+                disabled={resetPasswordLoading || !email.trim()}
+                tabIndex={4}
+                style={{ 
+                  color: 'var(--gray-11)'
+                }}
+              >
+                {resetPasswordLoading ? 'Sending...' : 'Forgot password?'}
+              </Button>
+            </Tooltip>
             <Button 
+              type="button"
               variant="ghost" 
-              onClick={handleForgotPassword}
-              disabled={resetPasswordLoading || !email.trim()}
-              style={{ 
-                color: 'var(--gray-11)'
-              }}
+              onClick={() => setIsSignUpMode(!isSignUpMode)}
+              tabIndex={5}
             >
-              {resetPasswordLoading ? 'Sending...' : 'Forgot password?'}
+              {isSignUpMode 
+                ? 'Already have an account? Sign In' 
+                : 'Need an account? Create Account'
+              }
             </Button>
-          </Tooltip>
-          <Button 
-            variant="ghost" 
-            onClick={() => setIsSignUpMode(!isSignUpMode)}
-          >
-            {isSignUpMode 
-              ? 'Already have an account? Sign In' 
-              : 'Need an account? Create Account'
-            }
-          </Button>
-          {error && <Text color="red">{error}</Text>}
-        </Flex>
+            {error && <Text color="red">{error}</Text>}
+          </Flex>
+        </form>
       </Container>
     )
   }
@@ -234,7 +257,10 @@ export default function Home() {
         )}
         <Flex gap="2">
           <Link href="/dashboard">
-            <Button disabled={!session.user.user_metadata?.display_name}>
+            <Button 
+              disabled={!session.user.user_metadata?.display_name}
+              tabIndex={1}
+            >
               Go to Dashboard
             </Button>
           </Link>
@@ -242,6 +268,7 @@ export default function Home() {
             onClick={handleLogout} 
             variant="outline"
             disabled={!session.user.user_metadata?.display_name}
+            tabIndex={2}
           >
             Log Out
           </Button>
