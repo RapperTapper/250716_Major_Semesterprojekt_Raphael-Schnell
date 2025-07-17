@@ -249,10 +249,7 @@ export default function Dashboard() {
               }
             </Heading>
             <Text>
-              {session.user.user_metadata?.display_name 
-                ? `Great to see you again! Your dashboard is ready.`
-                : `Hello! You're logged in as ${session.user.email}. Consider setting up your display name below for a more personalized experience.`
-              }
+              Great to see you again!
             </Text>
             <Text color="gray">
               Only authenticated users can access this page.
