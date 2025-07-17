@@ -142,7 +142,16 @@ export default function Home() {
     })
 
     if (error) {
-      setError(error.message)
+      // Check if the error indicates no user found
+      if (error.message.includes('User not found') || 
+          error.message.includes('No user found') ||
+          error.message.includes('not found') ||
+          error.message.includes('Invalid email') ||
+          error.message.includes('does not exist')) {
+        setError('No account found with the provided email address. Please check your email or create a new account.')
+      } else {
+        setError(error.message)
+      }
     } else {
       alert('Password reset email sent! Check your inbox for instructions.')
     }
